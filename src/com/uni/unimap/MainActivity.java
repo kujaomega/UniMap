@@ -17,8 +17,10 @@ import android.view.Display;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -37,12 +39,18 @@ public class MainActivity extends Activity implements OnTouchListener{
     static final int DRAG = 1;
     static final int ZOOM = 2;
     int mode = NONE;
+    public ImageView imageMap;
+    RelativeLayout testLayout;
 
     // these PointF objects are used to record the point(s) the user is touching
     PointF start = new PointF();
     PointF mid = new PointF();
+    PointF position = new PointF();
+    PointF axisMovement = new PointF();
+    PointF acumulatedMovement = new PointF();
     float oldDist = 1f;
-    Bundle instancedsaved;
+    float totalScale;
+
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -50,7 +58,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 		setContentView(R.layout.activity_main);
 
 		RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.frame);
-
+		
 		ImageView uniMapView = new ImageView(getApplicationContext());
 		uniMapView.setImageDrawable(getResources().getDrawable(R.drawable.planta0_1));
 		Display display =getWindowManager().getDefaultDisplay();
@@ -68,9 +76,15 @@ public class MainActivity extends Activity implements OnTouchListener{
 		//params.addRule(RelativeLayout.CENTER_IN_PARENT);
 
 		//uniMapView.setLayoutParams(params);
+		
+
 		uniMapView.setOnTouchListener(this);
 		relativeLayout.addView(uniMapView);
-		this.instancedsaved = savedInstanceState;
+		acumulatedMovement.x=0;
+		acumulatedMovement.y=0;
+		totalScale=0;
+		//position.x= viewCoords[0];
+		//position.y= viewCoords[1];
 	}
 	
 	@Override
@@ -127,7 +141,7 @@ public class MainActivity extends Activity implements OnTouchListener{
         
         dumpEvent(event);
         // Handle touch events here...
-
+        imageMap = view;
         switch (event.getAction() & MotionEvent.ACTION_MASK) 
         {
             case MotionEvent.ACTION_DOWN:   // first finger down only
@@ -138,6 +152,10 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                 break;
 
             case MotionEvent.ACTION_UP: // first finger lifted
+            	acumulatedMovement.x= acumulatedMovement.x + start.x - axisMovement.x;
+            	acumulatedMovement.y= acumulatedMovement.y + start.y - axisMovement.y;
+            	position.x= event.getX() + acumulatedMovement.x ;
+            	position.y= event.getY() + acumulatedMovement.y ;
             	long difftime = event.getEventTime()-event.getDownTime();
             	if (difftime<150)
             	{
@@ -170,6 +188,13 @@ public class MainActivity extends Activity implements OnTouchListener{
 
                                                 if (mode == DRAG) 
                                                 { 
+                                                	//int[] viewCoords = new int[2];
+                                            		//imageMap.getLocationOnScreen(viewCoords);
+                                                	axisMovement.x = event.getX();
+                                            		axisMovement.y = event.getY();
+
+                                            		
+                                                
                                                     matrix.set(savedMatrix);
                                                     matrix.postTranslate(event.getX() - start.x, event.getY() - start.y); // create the transformation in the matrix  of points
                                                 } 
@@ -185,6 +210,7 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                                                     // matrix...if scale > 1 means
                                                                                     // zoom in...if scale < 1 means
                                                                                     // zoom out
+                                                        
                                                         matrix.postScale(scale, scale, mid.x, mid.y);
                                                     }
                                                 }
@@ -256,9 +282,19 @@ public class MainActivity extends Activity implements OnTouchListener{
 
     public void showDialog(MotionEvent event, long time)
     {
+    	//int topParam =  imageMap.getPaddingTop();
+    	//int rightParam =  imageMap.getPaddingRight();
+    	//int maxTopParam = topParam+imageMap.getMeasuredWidth();
+    	//int maxRightParam = rightParam + imageMap.getLeft();
+    	
+    	
+    	int[] viewCoords = new int[2];
+		imageMap.getLocationOnScreen(viewCoords);
+    	float xf = position.x+viewCoords[0];
+    	float yf = position.y+viewCoords[1];
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Scan wifis");
-        alertDialog.setMessage("X: "+event.getX()+" Y: "+event.getY()+"   time: "+time);
+        alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y);
         alertDialog.show();	
     }
 }
