@@ -7,7 +7,11 @@ import android.app.AlertDialog;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -50,7 +54,7 @@ public class MainActivity extends Activity implements OnTouchListener{
     PointF acumulatedMovement = new PointF();
     float oldDist = 1f;
     float totalScale;
-
+    float partialScale;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -77,12 +81,12 @@ public class MainActivity extends Activity implements OnTouchListener{
 
 		//uniMapView.setLayoutParams(params);
 		
-
 		uniMapView.setOnTouchListener(this);
 		relativeLayout.addView(uniMapView);
 		acumulatedMovement.x=0;
 		acumulatedMovement.y=0;
-		totalScale=0;
+		totalScale=1;
+		partialScale=1;
 		//position.x= viewCoords[0];
 		//position.y= viewCoords[1];
 	}
@@ -136,6 +140,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
 		ImageView view = (ImageView) v;
+		
         view.setScaleType(ImageView.ScaleType.MATRIX);
         float scale;
         
@@ -152,6 +157,8 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                 break;
 
             case MotionEvent.ACTION_UP: // first finger lifted
+            	
+            	totalScale = totalScale*partialScale;
             	acumulatedMovement.x= acumulatedMovement.x + start.x - axisMovement.x;
             	acumulatedMovement.y= acumulatedMovement.y + start.y - axisMovement.y;
             	position.x= event.getX() + acumulatedMovement.x ;
@@ -210,7 +217,7 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                                                     // matrix...if scale > 1 means
                                                                                     // zoom in...if scale < 1 means
                                                                                     // zoom out
-                                                        
+                                                        partialScale=scale;
                                                         matrix.postScale(scale, scale, mid.x, mid.y);
                                                     }
                                                 }
@@ -292,9 +299,37 @@ public class MainActivity extends Activity implements OnTouchListener{
 		imageMap.getLocationOnScreen(viewCoords);
     	float xf = position.x+viewCoords[0];
     	float yf = position.y+viewCoords[1];
+    	drawCircle(xf, yf);
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Scan wifis");
-        alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y);
+        alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
         alertDialog.show();	
+    }
+    
+    public void drawCircle (float x, float y)
+    {
+    	BitmapFactory.Options myOptions = new BitmapFactory.Options();
+        myOptions.inDither = true;
+        myOptions.inScaled = false;
+        myOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;// important
+        myOptions.inPurgeable = true;
+        
+       
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.planta0_1,myOptions);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setColor(Color.BLUE);
+
+
+        Bitmap workingBitmap = Bitmap.createBitmap(bitmap);
+        Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+
+
+        Canvas canvas = new Canvas(mutableBitmap);
+        canvas.drawCircle(x, y, 25, paint);
+
+       
+       
+        imageMap.setImageBitmap(mutableBitmap);
     }
 }
