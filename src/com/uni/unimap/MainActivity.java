@@ -15,6 +15,8 @@ import android.graphics.Paint.Style;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.util.DisplayMetrics;
 import android.util.FloatMath;
 import android.util.Log;
 import android.view.Display;
@@ -55,6 +57,7 @@ public class MainActivity extends Activity implements OnTouchListener{
     float oldDist = 1f;
     float totalScale;
     float partialScale;
+    Bitmap scaledBitmap;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -64,7 +67,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 		RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.frame);
 		
 		ImageView uniMapView = new ImageView(getApplicationContext());
-		uniMapView.setImageDrawable(getResources().getDrawable(R.drawable.planta0_1));
+		//uniMapView.setImageDrawable(getResources().getDrawable(R.drawable.planta0_1));
 		Display display =getWindowManager().getDefaultDisplay();
 		Point size = new Point();
 		display.getSize(size);
@@ -73,8 +76,12 @@ public class MainActivity extends Activity implements OnTouchListener{
 		//int width = (int) getResources().getDimension(R.dimen.image_width);
 		//int height = (int) getResources().getDimension(R.dimen.image_height);
 		
-		uniMapView.setImageBitmap(
-			    decodeSampledBitmapFromResource(getResources(), R.drawable.planta0_1, width*2, height*2));
+		scaledBitmap = decodeSampledBitmapFromResource(getResources(), R.drawable.planta0_1, width, height);
+		
+		Bitmap workingBitmap = Bitmap.createBitmap(scaledBitmap);
+        Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        scaledBitmap = mutableBitmap;
+		uniMapView.setImageBitmap( scaledBitmap);
 		
 		//RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
 		//params.addRule(RelativeLayout.CENTER_IN_PARENT);
@@ -103,8 +110,17 @@ public class MainActivity extends Activity implements OnTouchListener{
 
 	    // First decode with inJustDecodeBounds=true to check dimensions
 	    final BitmapFactory.Options options = new BitmapFactory.Options();
-	    options.inJustDecodeBounds = true;
+	    options.inJustDecodeBounds = false;
+	    
+	    //copied options
+	    options.inDither = true;
+	    options.inScaled = true;
+	    options.inPreferredConfig = Bitmap.Config.ARGB_8888;// important
+	    options.inPurgeable = true;
+	    
 	    BitmapFactory.decodeResource(res, resId, options);
+	    
+	   
 
 	    // Calculate inSampleSize
 	    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
@@ -114,8 +130,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	    return BitmapFactory.decodeResource(res, resId, options);
 	}
 	
-	public static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
 	    // Raw height and width of image
 	    final int height = options.outHeight;
 	    final int width = options.outWidth;
@@ -151,6 +166,7 @@ public class MainActivity extends Activity implements OnTouchListener{
         {
             case MotionEvent.ACTION_DOWN:   // first finger down only
                                                 savedMatrix.set(matrix);
+                                                Log.d("MATRIx", matrix.toString());
                                                 start.set(event.getX(), event.getY());
                                                 Log.d(TAG, "mode=DRAG"); // write to LogCat
                                                 mode = DRAG;
@@ -158,18 +174,21 @@ public class MainActivity extends Activity implements OnTouchListener{
 
             case MotionEvent.ACTION_UP: // first finger lifted
             	
-            	totalScale = totalScale*partialScale;
-            	acumulatedMovement.x= acumulatedMovement.x + start.x - axisMovement.x;
-            	acumulatedMovement.y= acumulatedMovement.y + start.y - axisMovement.y;
-            	position.x= event.getX() + acumulatedMovement.x ;
-            	position.y= event.getY() + acumulatedMovement.y ;
-            	long difftime = event.getEventTime()-event.getDownTime();
-            	if (difftime<150)
-            	{
-            		showDialog(event, difftime);
-            	}
-            	
-            	break;
+								            	totalScale = totalScale*partialScale;
+								            	acumulatedMovement.x= acumulatedMovement.x + start.x - axisMovement.x;
+								            	acumulatedMovement.y= acumulatedMovement.y + start.y - axisMovement.y;
+								            	position.x= event.getX() + acumulatedMovement.x ;
+								            	position.y= event.getY() + acumulatedMovement.y ;
+								            	long difftime = event.getEventTime()-event.getDownTime();
+								            	if (difftime<150)
+								            	{
+								            		showDialog(event, difftime);
+								            	}
+								            	else if (difftime>5000) {
+													drawallCircle();
+												}
+								            	
+								            	break;
             							
            
 
@@ -287,6 +306,11 @@ public class MainActivity extends Activity implements OnTouchListener{
         Log.d("Touch Events ---------", sb.toString());
     }
 
+    /**
+     * Shows a dialog with the coordinates
+     * @param event
+     * @param time
+     */
     public void showDialog(MotionEvent event, long time)
     {
     	//int topParam =  imageMap.getPaddingTop();
@@ -294,20 +318,24 @@ public class MainActivity extends Activity implements OnTouchListener{
     	//int maxTopParam = topParam+imageMap.getMeasuredWidth();
     	//int maxRightParam = rightParam + imageMap.getLeft();
     	
-    	
+    	//Matrix matrix =imageMap.getMatrix();
     	int[] viewCoords = new int[2];
 		imageMap.getLocationOnScreen(viewCoords);
     	float xf = position.x+viewCoords[0];
     	float yf = position.y+viewCoords[1];
-    	drawCircle(xf, yf);
+    	drawCircle(position.x, position.y);
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Scan wifis");
+       
         alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
+        //alertDialog.setMessage("X: "+imageMap.getPaddingRight()+" Y: "+imageMap.getPaddingTop());
+
         alertDialog.show();	
     }
     
     public void drawCircle (float x, float y)
     {
+    	/*
     	BitmapFactory.Options myOptions = new BitmapFactory.Options();
         myOptions.inDither = true;
         myOptions.inScaled = false;
@@ -316,20 +344,83 @@ public class MainActivity extends Activity implements OnTouchListener{
         
        
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.planta0_1,myOptions);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setColor(Color.BLUE);
+       
 
 
         Bitmap workingBitmap = Bitmap.createBitmap(bitmap);
         Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
-
-
-        Canvas canvas = new Canvas(mutableBitmap);
-        canvas.drawCircle(x, y, 25, paint);
-
+		*/
+    	
+    	BitmapDrawable drawable = (BitmapDrawable) imageMap.getDrawable();
+    	Bitmap bitmap = drawable.getBitmap();
+    	Log.d("BITMAP", " x: "+String.valueOf(bitmap.getWidth())+" y :"+String.valueOf(bitmap.getHeight()));
+		 Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setColor(Color.BLUE);
+        Canvas canvas = new Canvas(bitmap);
+        //x=convertDpToPixel(x);
+        //y=convertDpToPixel(y);
+        //x=(float) ((float) x*0.74);
+        //y=(float) ((float) y*0.708);
+        canvas.drawCircle(x, y, 10, paint);
+        canvas.drawText("x: "+x+" y:"+y, x+10, y, paint);
+        
+        //int[] viewCoords = new int[2];
+        //imageMap.getLocationInWindow(viewCoords);
+        //canvas.drawText("x: "+viewCoords[0]+" y:"+viewCoords[1], x+10, y, paint);
        
        
-        imageMap.setImageBitmap(mutableBitmap);
+        imageMap.setImageBitmap(bitmap);
     }
+    
+    public void drawallCircle ()
+    {
+    	/*
+    	BitmapFactory.Options myOptions = new BitmapFactory.Options();
+        myOptions.inDither = true;
+        myOptions.inScaled = false;
+        myOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;// important
+        myOptions.inPurgeable = true;
+        
+       
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.planta0_1,myOptions);
+       
+
+
+        Bitmap workingBitmap = Bitmap.createBitmap(bitmap);
+        Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+		*/
+    	BitmapDrawable drawable = (BitmapDrawable) imageMap.getDrawable();
+    	Bitmap bitmap = drawable.getBitmap();
+		Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setColor(Color.BLUE);
+        Canvas canvas = new Canvas(bitmap);
+        for(int j=0; j<=1000; j=j+200)
+        {
+        	 for(int k=0; k<=1300; k=k+100)
+             {
+		        	canvas.drawCircle(j, k, 10, paint);
+		            canvas.drawText("x: "+j+" y:"+k, j+10, k, paint);
+		            Log.d("CircleDrown", "x: "+j+" y:"+k);
+             }
+        }
+        
+
+       
+       
+        imageMap.setImageBitmap(bitmap);
+    }
+    
+    public static float convertPixelsToDp(float px){
+	    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
+	    float dp = px / (metrics.densityDpi / 160f);
+	    return Math.round(dp);
+	}
+	
+       public static float convertDpToPixel(float dp){
+	    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
+	    float px = dp * (metrics.densityDpi / 160f);
+	    return Math.round(px);
+        }
 }
