@@ -15,6 +15,7 @@ import android.graphics.Paint.Style;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.DisplayMetrics;
 import android.util.FloatMath;
@@ -39,7 +40,8 @@ public class MainActivity extends Activity implements OnTouchListener{
     // These matrices will be used to scale points of the image
     Matrix matrix = new Matrix();
     Matrix savedMatrix = new Matrix();
-
+    Matrix savedMatrix2 = new Matrix();
+    
     // The 3 states (events) which the user is trying to perform
     static final int NONE = 0;
     static final int DRAG = 1;
@@ -55,9 +57,15 @@ public class MainActivity extends Activity implements OnTouchListener{
     PointF axisMovement = new PointF();
     PointF acumulatedMovement = new PointF();
     float oldDist = 1f;
+    float globalNewDist = 1f;
+    float totalOldDist = 0;
+    float totalNewDist = 0;
     float totalScale;
     float partialScale;
+    boolean makeScale;
     Bitmap scaledBitmap;
+    float imageWidth;
+	float imageHeight;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -88,12 +96,15 @@ public class MainActivity extends Activity implements OnTouchListener{
 
 		//uniMapView.setLayoutParams(params);
 		
+		//uniMapView.setOnTouchListener(this);
 		uniMapView.setOnTouchListener(this);
 		relativeLayout.addView(uniMapView);
 		acumulatedMovement.x=0;
 		acumulatedMovement.y=0;
 		totalScale=1;
 		partialScale=1;
+		mid.x=0;
+		mid.y=0;
 		//position.x= viewCoords[0];
 		//position.y= viewCoords[1];
 	}
@@ -166,19 +177,34 @@ public class MainActivity extends Activity implements OnTouchListener{
         {
             case MotionEvent.ACTION_DOWN:   // first finger down only
                                                 savedMatrix.set(matrix);
-                                                Log.d("MATRIx", matrix.toString());
+                                                //Log.d("MATRIx", matrix.toString());
                                                 start.set(event.getX(), event.getY());
                                                 Log.d(TAG, "mode=DRAG"); // write to LogCat
+                                                makeScale=false;
                                                 mode = DRAG;
                                                 break;
 
             case MotionEvent.ACTION_UP: // first finger lifted
-            	
-								            	totalScale = totalScale*partialScale;
-								            	acumulatedMovement.x= acumulatedMovement.x + start.x - axisMovement.x;
-								            	acumulatedMovement.y= acumulatedMovement.y + start.y - axisMovement.y;
-								            	position.x= event.getX() + acumulatedMovement.x ;
-								            	position.y= event.getY() + acumulatedMovement.y ;
+            									if(makeScale)
+            									{
+            										totalScale = totalScale*partialScale;
+            									}
+								            	
+								            	//acumulatedMovement.x= acumulatedMovement.x + (start.x - axisMovement.x)/totalScale;
+								            	//acumulatedMovement.y= acumulatedMovement.y + (start.y - axisMovement.y)/totalScale;
+								            	acumulatedMovement.x= acumulatedMovement.x + (start.x - axisMovement.x);
+								            	acumulatedMovement.y= acumulatedMovement.y + (start.y - axisMovement.y);
+            									
+								            	//position.x= event.getX() - acumulatedMovement.x ;
+								            	//position.y= event.getY() - acumulatedMovement.y ;
+								            	//position.x= mid.x +(event.getX()-mid.x)/totalScale + acumulatedMovement.x ;
+								            	//position.y=  mid.y +(event.getY()-mid.y)/totalScale + acumulatedMovement.y ;
+								            	//position.x= event.getX() + acumulatedMovement.x ;
+								            	//position.y= event.getY() + acumulatedMovement.y ;
+								            	//position.x= mid.x +(event.getX()-mid.x)+ acumulatedMovement.x ;
+								            	//position.y=  mid.y +(event.getY()-mid.y)+ acumulatedMovement.y ;
+								            	position.x= event.getX();
+								            	position.y= event.getY();
 								            	long difftime = event.getEventTime()-event.getDownTime();
 								            	if (difftime<150)
 								            	{
@@ -204,7 +230,9 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                 Log.d(TAG, "oldDist=" + oldDist);
                                                 if (oldDist > 5f) {
                                                     savedMatrix.set(matrix);
+                                                   
                                                     midPoint(mid, event);
+                                                    Log.d("MIDPOINT", " x: "+mid.x+" y: "+mid.y);
                                                     mode = ZOOM;
                                                     Log.d(TAG, "mode=ZOOM");
                                                 }
@@ -236,15 +264,16 @@ public class MainActivity extends Activity implements OnTouchListener{
                                                                                     // matrix...if scale > 1 means
                                                                                     // zoom in...if scale < 1 means
                                                                                     // zoom out
+                                                        makeScale=true;
                                                         partialScale=scale;
                                                         matrix.postScale(scale, scale, mid.x, mid.y);
                                                     }
                                                 }
                                                 break;
         }
-
+        
         view.setImageMatrix(matrix); // display the transformation on screen
-
+        imageMap = view;
         return true; // indicate event was handled
 	}
 	
@@ -313,22 +342,33 @@ public class MainActivity extends Activity implements OnTouchListener{
      */
     public void showDialog(MotionEvent event, long time)
     {
-    	//int topParam =  imageMap.getPaddingTop();
-    	//int rightParam =  imageMap.getPaddingRight();
-    	//int maxTopParam = topParam+imageMap.getMeasuredWidth();
-    	//int maxRightParam = rightParam + imageMap.getLeft();
-    	
-    	//Matrix matrix =imageMap.getMatrix();
+    	RectF r = new RectF(); 
+    	matrix.mapRect(r);
+    	Log.i(TAG, "Rect " + r.left + " " + r.top + " " + r.right + " " + r.bottom + " " +r.centerX()+" "+r.centerY() + " ");
+    	/*
+    	float[] values = new float[9];
+    	matrix.getValues(values);
+    	float globalX = values[Matrix.MTRANS_X];
+    	float globalY = values[Matrix.MTRANS_Y];
+    	float width = values[Matrix.MSCALE_X]*imageWidth;
+    	float height = values[Matrix.MSCALE_Y]*imageHeight;
+    	*/
     	int[] viewCoords = new int[2];
 		imageMap.getLocationOnScreen(viewCoords);
-    	float xf = position.x+viewCoords[0];
-    	float yf = position.y+viewCoords[1];
-    	drawCircle(position.x, position.y);
+    	//float xf = position.x+viewCoords[0];
+    	//float yf = position.y+viewCoords[1];
+		float scaledX = (position.x - r.left);
+		float scaledY = (position.y - r.top);
+
+		scaledX /= totalScale;
+		scaledY /= totalScale;
+		
+    	drawCircle(scaledX, scaledY);
+    	
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Scan wifis");
-       
-        alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
-        //alertDialog.setMessage("X: "+imageMap.getPaddingRight()+" Y: "+imageMap.getPaddingTop());
+        //alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
+        //alertDialog.setMessage("globalX: "+globalX+" globalY: "+globalY+" width: "+width+" height: "+height);
 
         alertDialog.show();	
     }
@@ -353,23 +393,36 @@ public class MainActivity extends Activity implements OnTouchListener{
     	
     	BitmapDrawable drawable = (BitmapDrawable) imageMap.getDrawable();
     	Bitmap bitmap = drawable.getBitmap();
+    	imageWidth= bitmap.getWidth();
+    	imageHeight = bitmap.getHeight();
     	Log.d("BITMAP", " x: "+String.valueOf(bitmap.getWidth())+" y :"+String.valueOf(bitmap.getHeight()));
 		 Paint paint = new Paint();
         paint.setAntiAlias(true);
         paint.setColor(Color.BLUE);
         Canvas canvas = new Canvas(bitmap);
-        //x=convertDpToPixel(x);
-        //y=convertDpToPixel(y);
-        //x=(float) ((float) x*0.74);
-        //y=(float) ((float) y*0.708);
+       
         canvas.drawCircle(x, y, 10, paint);
         canvas.drawText("x: "+x+" y:"+y, x+10, y, paint);
-        
+        //Rect imageBounds = drawable.getBounds();
+
         //int[] viewCoords = new int[2];
         //imageMap.getLocationInWindow(viewCoords);
         //canvas.drawText("x: "+viewCoords[0]+" y:"+viewCoords[1], x+10, y, paint);
-       
-       
+        //canvas.setMatrix(matrix);
+        /*
+        if(makeScale)
+        {
+        	matrix.postScale(totalScale, totalScale, mid.x, mid.y);
+        	//savedMatrix2.set(matrix);
+        }
+        else
+        {
+        	//savedMatrix2.set(matrix);
+        }
+        */
+        //matrix.postTranslate(event.getX() - start.x, event.getY() - start.y);
+        //matrix.postTranslate(acumulatedMovement.x, acumulatedMovement.y);
+        
         imageMap.setImageBitmap(bitmap);
     }
     
@@ -396,6 +449,7 @@ public class MainActivity extends Activity implements OnTouchListener{
         paint.setAntiAlias(true);
         paint.setColor(Color.BLUE);
         Canvas canvas = new Canvas(bitmap);
+        
         for(int j=0; j<=1000; j=j+200)
         {
         	 for(int k=0; k<=1300; k=k+100)
@@ -405,22 +459,12 @@ public class MainActivity extends Activity implements OnTouchListener{
 		            Log.d("CircleDrown", "x: "+j+" y:"+k);
              }
         }
-        
+      canvas.setMatrix(matrix);
 
        
        
         imageMap.setImageBitmap(bitmap);
     }
     
-    public static float convertPixelsToDp(float px){
-	    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
-	    float dp = px / (metrics.densityDpi / 160f);
-	    return Math.round(dp);
-	}
-	
-       public static float convertDpToPixel(float dp){
-	    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
-	    float px = dp * (metrics.densityDpi / 160f);
-	    return Math.round(px);
-        }
+
 }
