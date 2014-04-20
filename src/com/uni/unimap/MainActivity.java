@@ -1,9 +1,18 @@
 package com.uni.unimap;
 
+import java.util.List;
+
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,6 +35,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.RelativeLayout;
@@ -66,6 +76,11 @@ public class MainActivity extends Activity implements OnTouchListener{
     Bitmap scaledBitmap;
     float imageWidth;
 	float imageHeight;
+	LocationManager gps;
+	static double[][] coordenades;
+	static public double lat;
+	static public double lng;
+	String location_string;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -211,7 +226,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 								            		showDialog(event, difftime);
 								            	}
 								            	else if (difftime>5000) {
-													drawallCircle();
+													scanDialog();
 												}
 								            	
 								            	break;
@@ -353,8 +368,8 @@ public class MainActivity extends Activity implements OnTouchListener{
     	float width = values[Matrix.MSCALE_X]*imageWidth;
     	float height = values[Matrix.MSCALE_Y]*imageHeight;
     	*/
-    	int[] viewCoords = new int[2];
-		imageMap.getLocationOnScreen(viewCoords);
+    	//int[] viewCoords = new int[2];
+		//imageMap.getLocationOnScreen(viewCoords);
     	//float xf = position.x+viewCoords[0];
     	//float yf = position.y+viewCoords[1];
 		float scaledX = (position.x - r.left);
@@ -366,10 +381,124 @@ public class MainActivity extends Activity implements OnTouchListener{
     	drawCircle(scaledX, scaledY);
     	
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        alertDialog.setTitle("Scan wifis");
+        alertDialog.setTitle("Showed position on image");
         //alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
-        //alertDialog.setMessage("globalX: "+globalX+" globalY: "+globalY+" width: "+width+" height: "+height);
+        alertDialog.setMessage(" X: "+scaledX+" Y: "+scaledY);
+        //alertDialog.setMessage("r.left: "+r.left+" r.top: "+r.top+" position.x: "+position.x +" position.y: "+position.y);
+        alertDialog.show();	
+    }
+    
+    public void scanDialog()
+    {
 
+		
+    	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+    	alertDialog.setTitle("Last location");
+    	//alertDialog.set
+        alertDialog.setMessage(location_string);
+    	alertDialog.setButton(Dialog.BUTTON_POSITIVE, "Scan", new DialogInterface.OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				// TODO Auto-generated method stub
+				try
+				{
+		    		gps= (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		    		boolean enabled = gps.isProviderEnabled(LocationManager.GPS_PROVIDER);
+		    		Criteria criteria = new Criteria();
+		    		String provider = gps.getBestProvider(criteria, false);
+		    		//Location location = gps.getLastKnownLocation("network");
+		    		//gps.requestLocationUpdates(location.getProvider(), 400, 1,gps);
+		    		//location.
+		    		//List<String> providers = gps.getAllProviders();
+		    		//providers.remove(0);
+		    		//providers.remove(1);
+		    		//coordenades = new double [providers.size()][2];
+		    		coordenades = new double [0][2];
+		    		//providers.removeAll(Collections.singleton(null));
+		    		//location_string = providers.toString();
+		    		
+		    		LocationListener locationListener = new LocationListener() {
+		    		    public void onLocationChanged(Location location) {
+		    		      // Called when a new location is found by the network location provider.
+		    		    	 lat =  location.getLatitude();
+		    		    	 lng = location.getLongitude();
+		    		    	    
+		    		    	    
+		    		    }
+
+		    		    public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+		    		    public void onProviderEnabled(String provider) {}
+
+		    		    public void onProviderDisabled(String provider) {}
+		    		  };
+		    		
+
+
+		    		//for( int i=0; i<=(providers.size()-1);i++)
+		    		//{
+		    			try
+		    			{
+		    				//Vtext2.append("H1\n");
+		    				gps.requestLocationUpdates(provider, 400, 1, locationListener);
+		    				
+		    				Location location = gps.getLastKnownLocation(provider);
+		    				//Vtext2.append("H2\n"+location.getLatitude());
+		    				
+		    				location_string=" \n El proveidor es: "+location.getProvider()
+		    				+"\n Latitud: "+location.getLatitude()
+		    				+"\n Longitud: "+location.getLongitude()
+		    				+"\n Altitud: "+location.getAltitude()
+		    				+"\n Precisió: "+location.getAccuracy()+ " m"
+		    				
+		    				//+"\n to string:"+location.toString()
+		    				//+"\n \n gps activat?"+enabled
+		    				+"\n ultima Lat: "+String.valueOf(lat)
+		    				+"\n ultima Lng: "+String.valueOf(lng)+"\n"
+		    				+"\n distancia al últim: "+getDistance(lat, lng, location.getLatitude(), location.getLongitude())+" m"
+		    				;
+		    				lat= location.getLatitude();
+		    				lng = location.getLongitude();
+		    				//coordenades[i][0]=location.getLatitude();
+		    				//coordenades[i][1]=location.getLongitude();
+		    				coordenades[0][0]=location.getLatitude();
+		    				coordenades[0][1]=location.getLongitude();
+		    				//location_string = "Proveidor "+i+" ("+providers.get(i)+") : "+location_string;
+		    				location_string = "Proveidor ("+provider+") : "+location_string;
+		    				Log.d("No error1", location_string);		    				
+		    			}
+		    			catch (Exception e)
+		    			{
+		    				//Toast.makeText(this, "El provider: "+providers.get(i)+" no funciona", 1).show();
+		    				Log.d("error1", e.getMessage());
+		    			}
+		        		
+		    	
+		    		//}
+		    	
+		    		//Vtext2.setText(location_string);
+		    		
+
+		    		
+		    		
+		    		//WifiManager wifiManager = (WifiManager)context.getSystemService(context.WIFI_MODE_SCAN_ONLY);
+		    		//int linkSpeed = wifiManager.getConnectionInfo().getRssi();
+		    		Log.d("No error2", location_string);
+		    
+		    	}
+		    	catch ( Exception e)
+		    	{
+		    		//Toast.makeText(this, "Possible error:"+e.getMessage(), 1).show();
+		    		Log.d("error2", e.getMessage());
+		    	}
+				AlertDialog alertDialog2 = new AlertDialog.Builder(MainActivity.this).create();
+		    	alertDialog2.setTitle("Scanned place");
+		        alertDialog2.setMessage(location_string);
+		        alertDialog2.show();
+			}
+		});
+    	//alertDialog.setMessage(location_string);
         alertDialog.show();	
     }
     
@@ -403,26 +532,7 @@ public class MainActivity extends Activity implements OnTouchListener{
        
         canvas.drawCircle(x, y, 10, paint);
         canvas.drawText("x: "+x+" y:"+y, x+10, y, paint);
-        //Rect imageBounds = drawable.getBounds();
 
-        //int[] viewCoords = new int[2];
-        //imageMap.getLocationInWindow(viewCoords);
-        //canvas.drawText("x: "+viewCoords[0]+" y:"+viewCoords[1], x+10, y, paint);
-        //canvas.setMatrix(matrix);
-        /*
-        if(makeScale)
-        {
-        	matrix.postScale(totalScale, totalScale, mid.x, mid.y);
-        	//savedMatrix2.set(matrix);
-        }
-        else
-        {
-        	//savedMatrix2.set(matrix);
-        }
-        */
-        //matrix.postTranslate(event.getX() - start.x, event.getY() - start.y);
-        //matrix.postTranslate(acumulatedMovement.x, acumulatedMovement.y);
-        
         imageMap.setImageBitmap(bitmap);
     }
     
@@ -465,6 +575,20 @@ public class MainActivity extends Activity implements OnTouchListener{
        
         imageMap.setImageBitmap(bitmap);
     }
+    
+    public static int getDistance(double lat_a,double lng_a, double lat_b, double lon_b){
+    	  int Radius = 6371000; //Radio de la tierra
+    	  double lat1 = lat_a / 1E6;
+    	  double lat2 = lat_b / 1E6;
+    	  double lon1 = lng_a / 1E6;
+    	  double lon2 = lon_b / 1E6;
+    	  double dLat = Math.toRadians(lat2-lat1);
+    	  double dLon = Math.toRadians(lon2-lon1);
+    	  double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon /2) * Math.sin(dLon/2);
+    	  double c = 2 * Math.asin(Math.sqrt(a));
+    	  return (int) (Radius * c);  
+
+    	 }
     
 
 }
