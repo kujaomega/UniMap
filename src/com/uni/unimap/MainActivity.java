@@ -406,7 +406,8 @@ public class MainActivity extends Activity implements OnTouchListener{
 		    		gps= (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		    		boolean enabled = gps.isProviderEnabled(LocationManager.GPS_PROVIDER);
 		    		Criteria criteria = new Criteria();
-		    		String provider = gps.getBestProvider(criteria, false);
+		    		//String provider = gps.getBestProvider(criteria, false);
+		    		String provider = "gps";
 		    		//Location location = gps.getLastKnownLocation("network");
 		    		//gps.requestLocationUpdates(location.getProvider(), 400, 1,gps);
 		    		//location.
