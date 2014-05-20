@@ -2,17 +2,23 @@ package com.uni.unimap;
 
 import java.util.List;
 
+
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Message;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -81,6 +87,13 @@ public class MainActivity extends Activity implements OnTouchListener{
 	static public double lat;
 	static public double lng;
 	String location_string;
+	static double testlat;
+	static double testlong;
+	float imageX;
+	float imageY;
+	boolean makePoint;
+	String place="";
+	List<ScanResult> results;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -224,6 +237,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 								            	if (difftime<150)
 								            	{
 								            		showDialog(event, difftime);
+								            		
 								            	}
 								            	else if (difftime>5000) {
 													scanDialog();
@@ -357,6 +371,7 @@ public class MainActivity extends Activity implements OnTouchListener{
      */
     public void showDialog(MotionEvent event, long time)
     {
+    	
     	RectF r = new RectF(); 
     	matrix.mapRect(r);
     	Log.i(TAG, "Rect " + r.left + " " + r.top + " " + r.right + " " + r.bottom + " " +r.centerX()+" "+r.centerY() + " ");
@@ -377,15 +392,147 @@ public class MainActivity extends Activity implements OnTouchListener{
 
 		scaledX /= totalScale;
 		scaledY /= totalScale;
-		
-    	drawCircle(scaledX, scaledY);
+		imageX=scaledX;
+		imageY=scaledY;
+		setLatLong(scaledX, scaledY);
+    	
     	
     	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Showed position on image");
-        //alertDialog.setMessage("X: "+event.getRawX()+" Y: "+event.getRawY()+"   coord1: "+xf+" coord2: "+yf+" diferenciax: "+acumulatedMovement.x+" diferenciay: "+acumulatedMovement.y+ " scale: "+totalScale);
-        alertDialog.setMessage(" X: "+scaledX+" Y: "+scaledY);
+        
+        //alertDialog.setMessage(" X: "+scaledX+" Y: "+scaledY);
+        alertDialog.setMessage(" Latitud: "+testlat+" Longitud: "+testlong);
         //alertDialog.setMessage("r.left: "+r.left+" r.top: "+r.top+" position.x: "+position.x +" position.y: "+position.y);
+		alertDialog.setButton(Dialog.BUTTON_NEUTRAL, "Test", new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						String label = "Test point";
+						String uriBegin = "geo:" + testlat + "," + testlong;
+						String query = testlat + "," + testlong + "(" + label + ")";
+						String encodedQuery = Uri.encode(query);
+						String uriString = uriBegin + "?q=" + encodedQuery + "&z=22";
+						Uri uri = Uri.parse(uriString);
+						Intent intent = new Intent(android.content.Intent.ACTION_VIEW, uri);
+						startActivity(intent);
+					}
+		});
+		alertDialog.setButton(Dialog.BUTTON_POSITIVE, "Scan", new DialogInterface.OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+	    		try
+	    		{    		
+	        		String connectivity_context = Context.WIFI_SERVICE;
+	        		final WifiManager wifi = (WifiManager)getSystemService(connectivity_context);
+	        		//WifiInfo text_estatic = wifi.getConnectionInfo();
+	        		String text="";
+	        		wifi.startScan();
+	        		results= wifi.getScanResults();
+	        		for (ScanResult result : results)
+	        		{
+	        					text = text+"SSID: "+result.SSID
+	        					//+" \n Capabilities: "+result.capabilities
+	        					+" \n Frequencia: "+result.frequency
+	        					+" \n Potencia: "+result.level
+	        					+" \n BSSID: "+result.BSSID
+	        					//+" \n Timestamp: "
+	        					//+" \n Contents: "+result.describeContents()
+	        					//+" \n Codi hash: "+result.hashCode()
+	        					//+" \n To String: "+result.toString()
+	        					+"\n\n";
+	        		}
+	        		AlertDialog alertDialog2 = new AlertDialog.Builder(MainActivity.this).create();
+			    	alertDialog2.setTitle(place);
+			        alertDialog2.setMessage(text);
+			        alertDialog2.setButton(Dialog.BUTTON_POSITIVE, "GUARDAR", new DialogInterface.OnClickListener() {
+						
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							// TODO Auto-generated method stub
+							drawCircle(imageX, imageY);
+							
+						}
+					});
+			        alertDialog2.setButton(Dialog.BUTTON_NEUTRAL, "Set Place", new DialogInterface.OnClickListener() {
+						
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							
+							final CharSequence[] items = {" Aula 101 "," Aula 102 "," Aula 103 "," Aula 104 "};
+					           
+			                // Creating and Building the Dialog
+			                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+			                builder.setTitle("Selecciona Lugar");
+			                builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+			                public void onClick(DialogInterface dialog, int item) {
+			                  
+			                   
+			                    switch(item)
+			                    {
+			                        case 0:
+			                                // Your code when first option seletced
+			                        		place=String.valueOf(items[0]);
+			                                 break;
+			                        case 1:
+			                                // Your code when 2nd  option seletced
+			                        	place=String.valueOf(items[1]);
+			                                break;
+			                        case 2:
+			                               // Your code when 3rd option seletced
+			                        	place=String.valueOf(items[2]);
+			                                break;
+			                        case 3:
+			                                 // Your code when 4th  option seletced  
+			                        	place=String.valueOf(items[3]);
+			                                break;
+			                       
+			                    }
+			                       
+			                    }
+			                });
+			                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+								
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									// TODO Auto-generated method stub
+									dialog.dismiss();
+									
+								}
+							});
+			              builder.create();
+			              builder.show();
+						}
+			        });
+			        alertDialog2.setButton(Dialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+						
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							// TODO Auto-generated method stub
+							Toast.makeText(MainActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
+							
+						}
+					});
+			        alertDialog2.show();	        		
+	    		}
+	    		catch(Exception e)
+	    		{
+	    			Log.d("WIFISCAN", e.getMessage());
+	    		}
+			}
+});
+		alertDialog.setButton(Dialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				// TODO Auto-generated method stub
+				Toast.makeText(MainActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
+				
+			}
+		});
         alertDialog.show();	
+        
+        
     }
     
     public void scanDialog()
@@ -406,7 +553,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 		    		gps= (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		    		boolean enabled = gps.isProviderEnabled(LocationManager.GPS_PROVIDER);
 		    		Criteria criteria = new Criteria();
-		    		//String provider = gps.getBestProvider(criteria, false);
+		    		
 		    		String provider = "gps";
 		    		//Location location = gps.getLastKnownLocation("network");
 		    		//gps.requestLocationUpdates(location.getProvider(), 400, 1,gps);
@@ -451,13 +598,13 @@ public class MainActivity extends Activity implements OnTouchListener{
 		    				+"\n Latitud: "+location.getLatitude()
 		    				+"\n Longitud: "+location.getLongitude()
 		    				+"\n Altitud: "+location.getAltitude()
-		    				+"\n Precisió: "+location.getAccuracy()+ " m"
+		    				+"\n Precisiï¿½: "+location.getAccuracy()+ " m"
 		    				
 		    				//+"\n to string:"+location.toString()
 		    				//+"\n \n gps activat?"+enabled
 		    				+"\n ultima Lat: "+String.valueOf(lat)
 		    				+"\n ultima Lng: "+String.valueOf(lng)+"\n"
-		    				+"\n distancia al últim: "+getDistance(lat, lng, location.getLatitude(), location.getLongitude())+" m"
+		    				+"\n distancia al ï¿½ltim: "+getDistance(lat, lng, location.getLatitude(), location.getLongitude())+" m"
 		    				;
 		    				lat= location.getLatitude();
 		    				lng = location.getLongitude();
@@ -577,19 +724,69 @@ public class MainActivity extends Activity implements OnTouchListener{
         imageMap.setImageBitmap(bitmap);
     }
     
-    public static int getDistance(double lat_a,double lng_a, double lat_b, double lon_b){
-    	  int Radius = 6371000; //Radio de la tierra
-    	  double lat1 = lat_a / 1E6;
-    	  double lat2 = lat_b / 1E6;
-    	  double lon1 = lng_a / 1E6;
-    	  double lon2 = lon_b / 1E6;
-    	  double dLat = Math.toRadians(lat2-lat1);
-    	  double dLon = Math.toRadians(lon2-lon1);
-    	  double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon /2) * Math.sin(dLon/2);
-    	  double c = 2 * Math.asin(Math.sqrt(a));
-    	  return (int) (Radius * c);  
+	   public static double getDistance(double lat_a,double lon_a, double lat_b, double lon_b){
+	    	  double Radius = (double) 6371.0; //Radio de la tierra
+	    	  
+	    	  double lat1 = lat_a;
+	    	  double lat2 = lat_b;
+	    	  double lon1 = lon_a;
+	    	  double lon2 = lon_b;
+	    	  double dLat = Math.toRadians(lat2-lat1);
+	    	  double dLon = Math.toRadians(lon2-lon1);
+	    	  double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon /2) * Math.sin(dLon/2);
+	    	  double c = 2 * Math.asin(Math.sqrt(a));
+	    	  return (double) (Radius * c)*1000;
 
-    	 }
+	    	 }
+    
+    public void setLatLong(double pointx, double pointy)
+    {
+    	/*
+    	double latx=41.403525131186775;
+    	double longy=2.193743782592934;
+    	double posx=344.041;
+    	double posy=25.522142;
+    	double x11=3.9708213398457424438835793492790875820565961926048041621*1E-7;
+    	double x21=5.3337852255565321029706524878788673859822851423211338249*1E-7;
+    	double x12=3.8463383347614717403469501958589815332960268606603245663*1E-7;
+    	double x22=5.3929007815571954859168065659391904495429957097556426039*1E-7;
+    	pointx=pointx-posx;
+    	pointy=pointy-posy;
+    	pointx=pointx*x11+pointy*x21;
+    	pointy=pointx*x12+pointy*x22;
+    	testlat=latx+pointx;
+    	testlong=longy+pointy;
+    	*/
+    	double x1=41.403525131186775;
+    	double y1=2.193743782592934;
+    	double x2=41.40418497822078;
+    	double y2=2.1946689455078117;
+    	double x3=41.404028558630785;
+    	double y3=2.194457050995636;
+    	double x4=41.404229238358326;
+    	double y4=2.1941874889896384;
+    	double x21=(Math.abs(x1-x2))/1715.529158;
+		double x22=(Math.abs(y1-y2))/1715.529158;
+		double x11=(Math.abs(x3-x4))/505.3859399999;
+		double x12=(Math.abs(y3-y4))/505.3859399999;
+		double basex=344.041;
+		double basey=25.522142;
+		//849.42694, 1337.6772
+		//double basex=344.041;
+		//double basey=1337.6772;
+		pointx=pointx-basex;
+		pointy=pointy-basey;
+		Log.d("punts", "x: "+pointx+" y: "+pointy);
+    	testlat=pointx*x11+pointy*x21;
+    	testlong=-pointx*x12+pointy*x22;
+    	testlat=x1+testlat;
+    	testlong=y1+testlong;
+    	
+    	
+    	
+    	
+    	
+    }
     
 
 }
