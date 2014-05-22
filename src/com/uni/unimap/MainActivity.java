@@ -44,6 +44,7 @@ import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -94,6 +95,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	boolean makePoint;
 	String place="";
 	List<ScanResult> results;
+	String scanResults;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -397,7 +399,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 		setLatLong(scaledX, scaledY);
     	
     	
-    	AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+    	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Showed position on image");
         
         //alertDialog.setMessage(" X: "+scaledX+" Y: "+scaledY);
@@ -424,14 +426,14 @@ public class MainActivity extends Activity implements OnTouchListener{
 	    		try
 	    		{    		
 	        		String connectivity_context = Context.WIFI_SERVICE;
-	        		final WifiManager wifi = (WifiManager)getSystemService(connectivity_context);
+	        		WifiManager wifi = (WifiManager)getSystemService(connectivity_context);
 	        		//WifiInfo text_estatic = wifi.getConnectionInfo();
 	        		String text="";
 	        		wifi.startScan();
 	        		results= wifi.getScanResults();
 	        		for (ScanResult result : results)
 	        		{
-	        					text = text+"SSID: "+result.SSID
+	        					scanResults = scanResults+"SSID: "+result.SSID
 	        					//+" \n Capabilities: "+result.capabilities
 	        					+" \n Frequencia: "+result.frequency
 	        					+" \n Potencia: "+result.level
@@ -441,20 +443,28 @@ public class MainActivity extends Activity implements OnTouchListener{
 	        					//+" \n Codi hash: "+result.hashCode()
 	        					//+" \n To String: "+result.toString()
 	        					+"\n\n";
-	        		}
-	        		AlertDialog alertDialog2 = new AlertDialog.Builder(MainActivity.this).create();
+	        		}   
+	        		
+	    		}
+	    		catch(Exception e)
+	    		{
+	    			Log.d("WIFISCAN", e.getMessage());
+	    		}
+        		final AlertDialog.Builder alertDialog2 = new AlertDialog.Builder(MainActivity.this);
 			    	alertDialog2.setTitle(place);
-			        alertDialog2.setMessage(text);
-			        alertDialog2.setButton(Dialog.BUTTON_POSITIVE, "GUARDAR", new DialogInterface.OnClickListener() {
+			        alertDialog2.setMessage(scanResults);
+			        alertDialog2.setPositiveButton("GUARDAR", new DialogInterface.OnClickListener() {
 						
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							// TODO Auto-generated method stub
+							
+							
 							drawCircle(imageX, imageY);
 							
 						}
 					});
-			        alertDialog2.setButton(Dialog.BUTTON_NEUTRAL, "Set Place", new DialogInterface.OnClickListener() {
+			        alertDialog2.setNeutralButton("Set Place", new DialogInterface.OnClickListener() {
 						
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
@@ -496,7 +506,10 @@ public class MainActivity extends Activity implements OnTouchListener{
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
 									// TODO Auto-generated method stub
-									dialog.dismiss();
+									//ListView lw = ((AlertDialog)dialog).getListView();
+									//Object checkedItem = lw.getAdapter().getItem(lw.getCheckedItemPosition());
+									alertDialog2.setTitle(place);
+									alertDialog2.show();
 									
 								}
 							});
@@ -504,7 +517,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 			              builder.show();
 						}
 			        });
-			        alertDialog2.setButton(Dialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+			        alertDialog2.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
 						
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
@@ -513,12 +526,8 @@ public class MainActivity extends Activity implements OnTouchListener{
 							
 						}
 					});
-			        alertDialog2.show();	        		
-	    		}
-	    		catch(Exception e)
-	    		{
-	    			Log.d("WIFISCAN", e.getMessage());
-	    		}
+			        alertDialog2.create();
+			        alertDialog2.show();	
 			}
 });
 		alertDialog.setButton(Dialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
