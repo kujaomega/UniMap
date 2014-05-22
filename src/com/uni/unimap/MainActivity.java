@@ -819,6 +819,7 @@ public class MainActivity extends Activity implements OnTouchListener{
     }
     
     private void createDB(double latitude, double longitude, List<ScanResult> scanList, String location) {
+    	int floor=1;
     	SQLiteDatabase sampleDB =  this.openOrCreateDatabase(SAMPLE_DB_NAME, MODE_PRIVATE, null);
     	for (ScanResult result : results)
 		{
@@ -834,10 +835,11 @@ public class MainActivity extends Activity implements OnTouchListener{
                     + ", MapaY DOUBLE"
                     + ", Power INTEGER"
                     + ", Location VARCHAR"
+                    + ", Floor INTEGER"
                     +");");
             sampleDB.execSQL(
-            		"INSERT INTO A" + tableName +"(Latitude, Longitude, Frequency, MapaX, MapaY, Power, Location) "
-                    + " Values ('"+ latitude +"','"+ longitude +"','" + result.frequency +"','"+ imageX+"','"+ imageY+"','"+ result.level+"','"+location+"'"
+            		"INSERT INTO A" + tableName +"(Latitude, Longitude, Frequency, MapaX, MapaY, Power, Location, Floor) "
+                    + " Values ('"+ latitude +"','"+ longitude +"','" + result.frequency +"','"+ imageX+"','"+ imageY+"','"+ result.level+"','"+location+"', '"+floor+"' "
                     +");");
             Toast.makeText(this, "Table: "+tableName+" Created", Toast.LENGTH_LONG).show(); 
             
