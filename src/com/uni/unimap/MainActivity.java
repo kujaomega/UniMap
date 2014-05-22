@@ -1,5 +1,10 @@
 package com.uni.unimap;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.List;
 
 
@@ -11,6 +16,7 @@ import android.net.Uri;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -20,6 +26,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -37,6 +44,7 @@ import android.util.FloatMath;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -96,6 +104,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	String place="";
 	List<ScanResult> results;
 	String scanResults;
+	private static final String SAMPLE_DB_NAME = "WifiScans";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -144,6 +153,21 @@ public class MainActivity extends Activity implements OnTouchListener{
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Handle item selection
+	    switch (item.getItemId()) {
+	        case R.id.export_db:
+	            exportDB();
+	            return true;
+	        case R.id.delete_db:
+	            deleteDB();
+	            return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
 	}
 	
 	public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
@@ -431,6 +455,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	        		String text="";
 	        		wifi.startScan();
 	        		results= wifi.getScanResults();
+	        		scanResults="";
 	        		for (ScanResult result : results)
 	        		{
 	        					scanResults = scanResults+"SSID: "+result.SSID
@@ -459,7 +484,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 						public void onClick(DialogInterface dialog, int which) {
 							// TODO Auto-generated method stub
 							
-							
+							createDB(testlat, testlong, results, place);
 							drawCircle(imageX, imageY);
 							
 						}
@@ -733,7 +758,7 @@ public class MainActivity extends Activity implements OnTouchListener{
         imageMap.setImageBitmap(bitmap);
     }
     
-	   public static double getDistance(double lat_a,double lon_a, double lat_b, double lon_b){
+	public static double getDistance(double lat_a,double lon_a, double lat_b, double lon_b){
 	    	  double Radius = (double) 6371.0; //Radio de la tierra
 	    	  
 	    	  double lat1 = lat_a;
@@ -791,11 +816,62 @@ public class MainActivity extends Activity implements OnTouchListener{
     	testlat=x1+testlat;
     	testlong=y1+testlong;
     	
-    	
-    	
-    	
-    	
     }
     
-
+    private void createDB(double latitude, double longitude, List<ScanResult> scanList, String location) {
+    	SQLiteDatabase sampleDB =  this.openOrCreateDatabase(SAMPLE_DB_NAME, MODE_PRIVATE, null);
+    	for (ScanResult result : results)
+		{
+    		String tableName=result.BSSID.replace(":","");
+    		
+    		sampleDB.execSQL(
+    				"CREATE TABLE IF NOT EXISTS A" +tableName 
+                    + " (ID INTEGER PRIMARY KEY   AUTOINCREMENT"
+                    + ", Latitude DOUBLE"
+                    + ", Longitude DOUBLE"
+                    + ", Frequency INTEGER "
+                    + ", MapaX DOUBLE"
+                    + ", MapaY DOUBLE"
+                    + ", Power INTEGER"
+                    + ", Location VARCHAR"
+                    +");");
+            sampleDB.execSQL(
+            		"INSERT INTO A" + tableName +"(Latitude, Longitude, Frequency, MapaX, MapaY, Power, Location) "
+                    + " Values ('"+ latitude +"','"+ longitude +"','" + result.frequency +"','"+ imageX+"','"+ imageY+"','"+ result.level+"','"+location+"'"
+                    +");");
+            Toast.makeText(this, "Table: "+tableName+" Created", Toast.LENGTH_LONG).show(); 
+            
+		}
+    	sampleDB.close();
+        sampleDB.getPath();
+        Toast.makeText(this, "DB Created @ "+sampleDB.getPath(), Toast.LENGTH_LONG).show(); 
+    	
+	}
+    
+    private void exportDB(){
+		File sd = Environment.getExternalStorageDirectory();
+        File data = Environment.getDataDirectory();
+        FileChannel source=null;
+        FileChannel destination=null;
+        String currentDBPath = "/data/"+ "com.uni.unimap" +"/databases/"+SAMPLE_DB_NAME;
+        String backupDBPath = "/Backup/"+SAMPLE_DB_NAME;
+        File currentDB = new File(data, currentDBPath);
+        File backupDB = new File(sd, backupDBPath);
+        try {
+            source = new FileInputStream(currentDB).getChannel();
+            destination = new FileOutputStream(backupDB).getChannel();
+            destination.transferFrom(source, 0, source.size());
+            source.close();
+            destination.close();
+            Toast.makeText(this, "DB Exported!", Toast.LENGTH_LONG).show();
+        } catch(IOException e) {
+        	e.printStackTrace();
+        }
+	}
+    private void deleteDB(){
+		boolean result = this.deleteDatabase(SAMPLE_DB_NAME);
+		if (result==true) {
+			 Toast.makeText(this, "DB Deleted!", Toast.LENGTH_LONG).show();
+		} 
+	}
 }

@@ -7,4 +7,7 @@
 	<string name="wifiscan">Scan wifi networks</string>
 	<string name="fire">Scan</string>
 	<string name="cancel">Cancel</string>
+	<string name="export_db">Exportar Base de Datos</string>
+	<string name="delete_db">Eliminar Base de Datos</string>
+	
 </resources>
