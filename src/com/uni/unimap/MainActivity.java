@@ -834,7 +834,7 @@ public class MainActivity extends Activity implements OnTouchListener{
                     + ", MapaX DOUBLE"
                     + ", MapaY DOUBLE"
                     + ", Power INTEGER"
-                    + ", Location VARCHAR"
+                    + ", Location VARCHAR(50)"
                     + ", Floor INTEGER"
                     +");");
             sampleDB.execSQL(
