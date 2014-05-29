@@ -105,6 +105,7 @@ public class MainActivity extends Activity implements OnTouchListener{
 	List<ScanResult> results;
 	String scanResults;
 	private static final String SAMPLE_DB_NAME = "WifiScans";
+	int floor=1;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -494,36 +495,19 @@ public class MainActivity extends Activity implements OnTouchListener{
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							
-							final CharSequence[] items = {" Aula 101 "," Aula 102 "," Aula 103 "," Aula 104 "};
-					           
-			                // Creating and Building the Dialog
+							final CharSequence[] items = {"Aula 52.101", "Aula 52.105", "Aula 52.109", "Aula 52.113", "Aula 52.117", "Aula 52.119", "Aula 52.121", "Aula 52.123", "Pasadís aules teoria", "Pasadís aules seminaris","Lavabos", "Escales", "Ascensor"};
+							//final CharSequence[] items2 = {"Aula 52.201", "Aula 52.205", "Aula 52.207", "Aula 52.209", "Aula 52.211", "Aula 52.213", "Aula 52.217", "Aula 52.219", "Aula 52.221", "Aula 52.223", "Pasadís aules teoria", "Pasadís aules seminaris","Lavabos", "Escales", "Ascensor"};
+							//final CharSequence[] items3 = {"Aula 52.301", "Aula 52.303", "Aula 52.309", "Aula 52.311", "Aula 52.313", "Aula 52.315", "Aula 52.321", "Aula 52.323", "Aula 52.325", "Aula 52.327", "Aula 52.329", "Pasadís aules teoria", "Pasadís aules seminaris","Lavabos", "Escales", "Ascensor"};
+							//final CharSequence[] items4 = {"Aula 52.401", "Aula 52.403", "Aula 52.413", "Aula 52.415", "Aula 52.421", "Aula 52.423", "Aula 52.425", "Aula 52.427", "Aula 52.429", "Pasadís aules teoria", "Pasadís aules seminaris","Lavabos", "Escales", "Ascensor"};
+							//final CharSequence[] items0 = {"Aula 52.001", "Aula 52.005", "Aula 52.011", "Aula 52.013", "Aula 52.015", "Aula 52.019", "Aula 52.023", "Pasadís aules teoria", "Pasadís aules seminaris","Lavabos", "Escales", "Ascensor"};
+
+							// Creating and Building the Dialog
 			                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 			                builder.setTitle("Selecciona Lugar");
 			                builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
 			                public void onClick(DialogInterface dialog, int item) {
-			                  
-			                   
-			                    switch(item)
-			                    {
-			                        case 0:
-			                                // Your code when first option seletced
-			                        		place=String.valueOf(items[0]);
-			                                 break;
-			                        case 1:
-			                                // Your code when 2nd  option seletced
-			                        	place=String.valueOf(items[1]);
-			                                break;
-			                        case 2:
-			                               // Your code when 3rd option seletced
-			                        	place=String.valueOf(items[2]);
-			                                break;
-			                        case 3:
-			                                 // Your code when 4th  option seletced  
-			                        	place=String.valueOf(items[3]);
-			                                break;
-			                       
-			                    }
-			                       
+			                	place=String.valueOf(items[item]);
+                                
 			                    }
 			                });
 			                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
@@ -819,7 +803,6 @@ public class MainActivity extends Activity implements OnTouchListener{
     }
     
     private void createDB(double latitude, double longitude, List<ScanResult> scanList, String location) {
-    	int floor=1;
     	SQLiteDatabase sampleDB =  this.openOrCreateDatabase(SAMPLE_DB_NAME, MODE_PRIVATE, null);
     	for (ScanResult result : results)
 		{
